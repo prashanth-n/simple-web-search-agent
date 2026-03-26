@@ -5,7 +5,7 @@ Production-oriented starter for a web research workflow with a FastAPI backend, 
 ## Structure
 
 ```text
-web-research-mcp/
+.
 ├── backend/
 ├── frontend/
 ├── docker-compose.yml
@@ -19,7 +19,7 @@ web-research-mcp/
 - Agent flow: DuckDuckGo search -> page scrape -> Ollama Cloud summary.
 - Research queries and result payloads are stored in PostgreSQL through SQLAlchemy.
 
-## Setup
+## Local Setup
 
 ### 1. Configure environment
 
@@ -31,23 +31,21 @@ Copy `backend/.env.example` to `backend/.env` and set a valid `OLLAMA_API_KEY`.
 docker compose up --build
 ```
 
-Services:
+This is the recommended way to start the project locally.
+
+Services started by Docker:
 
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:8000`
 - PostgreSQL: `localhost:5432`
 
-### 3. Run the frontend locally
+### 3. Stop the stack
 
 ```bash
-cd frontend
-npm install
-npm run dev
+docker compose down
 ```
 
-The app will be available at `http://localhost:5173`.
-
-## Local backend development
+## Optional Manual Development
 
 ```bash
 cd backend

@@ -5,10 +5,17 @@ import json
 from app.core.llm import generate_json
 
 
-def summarize_content(text: str, source_title: str, source_url: str) -> dict[str, str]:
+def summarize_content(
+    text: str,
+    source_title: str,
+    source_url: str,
+    system_prompt: str,
+    model: str,
+) -> dict[str, str]:
     prompt = f"""
-You are a research summarizer.
-Summarize the article content into JSON with keys: title, summary, source.
+{system_prompt}
+
+Return JSON with keys: title, summary, source.
 
 Rules:
 - title: concise human-readable title
@@ -21,7 +28,7 @@ Article content:
 {text}
 """.strip()
 
-    response = generate_json(prompt)
+    response = generate_json(prompt, model=model)
 
     try:
         parsed = json.loads(response)

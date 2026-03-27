@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 42 37% 93%;
+    --foreground: 210 24% 17%;
+    --card: 40 45% 98%;
+    --card-foreground: 210 24% 17%;
+    --popover: 40 45% 98%;
+    --popover-foreground: 210 24% 17%;
+    --primary: 168 70% 27%;
+    --primary-foreground: 44 43% 97%;
+    --secondary: 38 39% 87%;
+    --secondary-foreground: 210 24% 17%;
+    --muted: 36 28% 86%;
+    --muted-foreground: 215 16% 38%;
+    --accent: 23 58% 44%;
+    --accent-foreground: 44 43% 97%;
+    --destructive: 0 72% 51%;
+    --border: 33 35% 77%;
+    --input: 33 35% 77%;
+    --ring: 168 70% 27%;
+    --radius: 1rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply min-h-screen bg-paper text-foreground antialiased;
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+}

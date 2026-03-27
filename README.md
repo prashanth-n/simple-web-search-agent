@@ -1,6 +1,6 @@
 # Web Research MCP
 
-Production-oriented starter for a web research workflow with a FastAPI backend, PostgreSQL persistence, Ollama Cloud summarization, and a React + Vite frontend.
+Production-oriented starter for a multi-agent web research workflow with a FastAPI backend, PostgreSQL persistence, Ollama Cloud summarization, and a React + Vite frontend.
 
 ## Structure
 
@@ -14,10 +14,11 @@ Production-oriented starter for a web research workflow with a FastAPI backend, 
 
 ## Backend
 
-- `GET /` returns a health payload.
-- `GET /research?query=...` runs the research agent.
-- Agent flow: DuckDuckGo search -> page scrape -> Ollama Cloud summary.
-- Research queries and result payloads are stored in PostgreSQL through SQLAlchemy.
+- `GET /health-chec` returns a health payload.
+- `GET /agents` returns the available agent catalog.
+- `GET /research?query=...&agent_id=...` runs the selected agent.
+- Agent flow: Ollama web search -> Ollama web fetch -> Ollama Cloud summary, with fallback to DuckDuckGo search and HTML scraping.
+- The app seeds 3 agents and stores each agent's runs in a separate table inside one shared PostgreSQL database.
 
 ## Local Setup
 
@@ -53,14 +54,16 @@ uv sync
 uv run uvicorn app.main:app --reload
 ```
 
-## Example request
+## Example requests
 
 ```bash
-curl "http://localhost:8000/research?query=latest%20battery%20storage%20market%20trends"
+curl "http://localhost:8000/agents"
+curl "http://localhost:8000/research?query=latest%20battery%20storage%20market%20trends&agent_id=1"
 ```
 
 ## Notes
 
-- Ollama Cloud API requests are sent to `https://ollama.com/api/generate` with bearer-token authentication.
-- The default model is `llama3`, configurable via `OLLAMA_MODEL`.
-- The frontend uses reusable button, input, and card primitives in a shadcn-style component pattern inside `Search.jsx`.
+- Ollama Cloud API requests are sent to `https://ollama.com/api` with bearer-token authentication.
+- All agents use `qwen3:30b` by default through `OLLAMA_MODEL`, and can be changed later per agent.
+- The backend seeds `Generic Web Research`, `Startup Analyst`, and `Marketing Analyst` with stable IDs.
+- The frontend uses Tailwind plus shadcn-style UI primitives for the sidebar, selector, cards, button, and input.

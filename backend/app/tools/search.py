@@ -6,6 +6,8 @@ from urllib.parse import parse_qs, unquote, urlparse
 import requests
 from bs4 import BeautifulSoup
 
+from app.core.llm import post_ollama
+
 SEARCH_URL = "https://html.duckduckgo.com/html/"
 HEADERS = {
     "User-Agent": (
@@ -29,7 +31,29 @@ def _normalize_link(raw_link: str) -> str:
     return raw_link
 
 
-def search_web(query: str, limit: int = 5) -> list[SearchResult]:
+def _search_with_ollama(query: str, limit: int) -> list[SearchResult]:
+    payload = post_ollama(
+        "/web_search",
+        {
+            "query": query,
+            "max_results": limit,
+        },
+        timeout=30,
+    )
+
+    results: list[SearchResult] = []
+    for item in payload.get("results", []):
+        title = str(item.get("title", "")).strip()
+        link = str(item.get("url", "")).strip()
+        if title and link:
+            results.append({"title": title, "link": link})
+        if len(results) >= limit:
+            break
+
+    return results
+
+
+def _search_with_duckduckgo(query: str, limit: int) -> list[SearchResult]:
     response = requests.get(
         SEARCH_URL,
         params={"q": query},
@@ -63,3 +87,14 @@ def search_web(query: str, limit: int = 5) -> list[SearchResult]:
                 break
 
     return results
+
+
+def search_web(query: str, limit: int = 5) -> list[SearchResult]:
+    try:
+        results = _search_with_ollama(query, limit)
+        if results:
+            return results
+    except requests.RequestException:
+        pass
+
+    return _search_with_duckduckgo(query, limit)

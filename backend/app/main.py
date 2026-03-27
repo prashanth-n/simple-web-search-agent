@@ -5,8 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import router
 from app.config import get_settings
+from app.db.bootstrap import seed_agents
 from app.db.models import Base
-from app.db.session import engine
+from app.db.session import SessionLocal, engine
 
 settings = get_settings()
 app = FastAPI(title=settings.app_name)
@@ -23,6 +24,8 @@ app.add_middleware(
 @app.on_event("startup")
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
+    with SessionLocal() as db:
+        seed_agents(db)
 
 
 app.include_router(router)

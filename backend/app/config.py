@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     )
     ollama_base_url: str = "https://ollama.com/api"
     ollama_api_key: str = ""
-    ollama_model: str = "llama3"
+    ollama_model: str = "qwen3:30b"
     frontend_origin: str = "http://localhost:5173"
 
 

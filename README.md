@@ -14,7 +14,7 @@ Production-oriented starter for a multi-agent web research workflow with a FastA
 
 ## Backend
 
-- `GET /health-chec` returns a health payload.
+- `GET /health-check` returns a health payload.
 - `GET /agents` returns the available agent catalog.
 - `GET /research?query=...&agent_id=...` runs the selected agent.
 - Agent flow: Ollama web search -> Ollama web fetch -> Ollama Cloud summary, with fallback to DuckDuckGo search and HTML scraping.

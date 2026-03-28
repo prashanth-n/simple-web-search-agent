@@ -39,9 +39,10 @@ def run_research(profile: AgentProfile, query: str) -> list[dict[str, str]]:
 def persist_research_run(
     db: Session,
     profile: AgentProfile,
+    user_id: int | None,
     query: str,
-    results: list[dict[str, str]],
+    results,
 ) -> None:
-    record = profile.run_model(agent_id=profile.id, query=query, results=results)
+    record = profile.run_model(user_id=user_id, agent_id=profile.id, query=query, results=results)
     db.add(record)
-    db.commit()
+    db.flush()

@@ -27,15 +27,23 @@ def post_ollama(path: str, payload: dict[str, Any], timeout: int = 90) -> dict[s
     return response.json()
 
 
-def generate_json(prompt: str, model: str | None = None) -> str:
+def _generate(prompt: str, model: str | None, response_format: str | None = None) -> str:
     settings = get_settings()
-    payload = post_ollama(
-        "/generate",
-        {
-            "model": model or settings.ollama_model,
-            "prompt": prompt,
-            "stream": False,
-            "format": "json",
-        },
-    )
-    return payload.get("response", "{}")
+    payload: dict[str, Any] = {
+        "model": model or settings.ollama_model,
+        "prompt": prompt,
+        "stream": False,
+    }
+    if response_format:
+        payload["format"] = response_format
+
+    response = post_ollama("/generate", payload)
+    return response.get("response", "")
+
+
+def generate_json(prompt: str, model: str | None = None) -> str:
+    return _generate(prompt, model, response_format="json") or "{}"
+
+
+def generate_text(prompt: str, model: str | None = None) -> str:
+    return _generate(prompt, model).strip()

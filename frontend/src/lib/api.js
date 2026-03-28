@@ -83,6 +83,11 @@ export async function fetchMessages(threadId) {
   return parseResponse(response, "Failed to load messages");
 }
 
+export async function fetchThreadMemory(threadId) {
+  const response = await apiFetch(`/threads/${threadId}/memory`, { headers: {} });
+  return parseResponse(response, "Failed to load thread memory");
+}
+
 export async function sendMessage(threadId, content) {
   const response = await apiFetch(`/threads/${threadId}/messages`, {
     method: "POST",

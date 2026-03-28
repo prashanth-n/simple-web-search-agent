@@ -121,3 +121,23 @@ class ChatMessage(Base):
     message_type: Mapped[str] = mapped_column(String(50), nullable=False, default="text")
     metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class ChatMemory(Base):
+    __tablename__ = "chat_memories"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    thread_id: Mapped[int] = mapped_column(ForeignKey("chat_threads.id"), nullable=False, index=True)
+    agent_id: Mapped[int] = mapped_column(ForeignKey("agents.id"), nullable=False, index=True)
+    memory_type: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    source_message_id: Mapped[int | None] = mapped_column(ForeignKey("chat_messages.id"), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )

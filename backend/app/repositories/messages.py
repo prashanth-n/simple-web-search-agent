@@ -42,3 +42,14 @@ class MessageRepository:
                 .order_by(ChatMessage.created_at.asc(), ChatMessage.id.asc())
             ).all()
         )
+
+    def list_recent_for_thread(self, *, thread_id: int, user_id: int, limit: int) -> list[ChatMessage]:
+        messages = list(
+            self.db.scalars(
+                select(ChatMessage)
+                .where(ChatMessage.thread_id == thread_id, ChatMessage.user_id == user_id)
+                .order_by(ChatMessage.created_at.desc(), ChatMessage.id.desc())
+                .limit(limit)
+            ).all()
+        )
+        return list(reversed(messages))

@@ -13,20 +13,49 @@ from app.tools.summarize import (
 
 
 def _extract_symbol(query: str) -> str:
-    tokens = [token.strip(" ,.:;!?()[]{}").upper() for token in query.split()]
-    for token in tokens:
-        if 1 <= len(token) <= 5 and token.isalpha():
-            return token
+    for token in query.split():
+        cleaned = token.strip(" ,.:;!?()[]{}")
+        candidate = cleaned.removeprefix("$")
+        if 1 <= len(candidate) <= 5 and candidate.isalpha() and candidate == candidate.upper():
+            return candidate
     raise ValueError("Please include a stock ticker symbol such as AAPL or MSFT.")
 
 
-def execute_agent_response(profile: AgentProfile, content: str) -> dict[str, Any]:
+def _resolve_symbol(content: str, memory_facts: list[dict[str, Any]]) -> str:
+    try:
+        return _extract_symbol(content)
+    except ValueError:
+        for fact in memory_facts:
+            metadata = fact.get("metadata") if isinstance(fact, dict) else {}
+            if not isinstance(metadata, dict):
+                continue
+            if str(metadata.get("key")) == "ticker":
+                value = str(metadata.get("value") or "").strip().upper()
+                if value:
+                    return value
+        raise
+
+
+def _contextual_query(content: str, context_block: str) -> str:
+    if not context_block.strip():
+        return content
+    return f"{content}\n\nRelevant thread context:\n{context_block.strip()}"
+
+
+def execute_agent_response(
+    profile: AgentProfile,
+    content: str,
+    *,
+    context_block: str = "",
+    memory_facts: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    memory_facts = memory_facts or []
     if profile.mode == "financial":
-        symbol = _extract_symbol(content)
+        symbol = _resolve_symbol(content, memory_facts)
         overview = get_company_overview(symbol)
         chart = get_daily_series(symbol)
         assistant_content = summarize_financial_snapshot(
-            query=content,
+            query=_contextual_query(content, context_block),
             company_overview=overview,
             chart_data=chart,
             system_prompt=profile.system_prompt,
@@ -45,12 +74,13 @@ def execute_agent_response(profile: AgentProfile, content: str) -> dict[str, Any
             "run_payload": metadata,
         }
 
-    results = run_research(profile, content)
+    effective_query = _contextual_query(content, context_block)
+    results = run_research(profile, effective_query)
     if not results:
         raise ValueError("No research results were produced.")
 
     if profile.mode == "competitor":
-        analysis = summarize_competitor_analysis(content, results, profile.system_prompt, profile.model)
+        analysis = summarize_competitor_analysis(effective_query, results, profile.system_prompt, profile.model)
         metadata = {
             "company_or_product": analysis["company_or_product"],
             "competitors": analysis["competitors"],
@@ -65,7 +95,7 @@ def execute_agent_response(profile: AgentProfile, content: str) -> dict[str, Any
         }
 
     assistant_content = summarize_research_results(
-        content,
+        effective_query,
         results,
         profile.system_prompt,
         profile.model,

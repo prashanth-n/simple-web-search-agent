@@ -21,7 +21,7 @@ import {
 
 import { useAgents } from "@/hooks/use-agents";
 import { useAuthActions } from "@/hooks/use-auth";
-import { useCreateThread, useMessages, useSendMessage, useThreads } from "@/hooks/use-chat";
+import { useCreateThread, useMessages, useSendMessage, useThreadMemory, useThreads } from "@/hooks/use-chat";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
@@ -255,11 +255,12 @@ export default function Search({ user }) {
 
   const { threads, isLoading: loadingThreads, errorMessage: threadsError } = useThreads(selectedAgentId);
   const { messages, isLoading: loadingMessages, errorMessage: messagesError } = useMessages(selectedThreadId);
+  const { memory, isLoading: loadingMemory, errorMessage: memoryError } = useThreadMemory(selectedThreadId);
   const { createChatThread, isCreating, errorMessage: createThreadError } = useCreateThread();
   const { submitMessage, isSending, errorMessage: sendMessageError } = useSendMessage(selectedAgentId);
   const { logout, isSubmitting: isLoggingOut } = useAuthActions();
 
-  const error = sendMessageError || createThreadError || messagesError || threadsError || agentsError;
+  const error = sendMessageError || createThreadError || messagesError || memoryError || threadsError || agentsError;
   const placeholder = placeholderForAgent(selectedAgent);
 
   async function handleSubmit(event) {
@@ -435,6 +436,46 @@ export default function Search({ user }) {
           </CardHeader>
 
           <CardContent className="flex flex-1 flex-col gap-4 p-6">
+            {selectedThreadId ? (
+              <Card className="border-border/70 bg-secondary/40 shadow-none">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg">Thread context</CardTitle>
+                  <CardDescription>
+                    Auto-saved summary and key facts for this conversation.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 text-sm">
+                  {loadingMemory ? (
+                    <p className="text-muted-foreground">Loading thread context...</p>
+                  ) : (
+                    <>
+                      <div>
+                        <div className="mb-2 font-semibold text-foreground">Summary</div>
+                        <p className="rounded-2xl bg-background/70 p-4 leading-6 text-muted-foreground">
+                          {memory.summary || "No summary saved yet for this thread."}
+                        </p>
+                      </div>
+                      <div>
+                        <div className="mb-2 font-semibold text-foreground">Key facts</div>
+                        {memory.facts?.length ? (
+                          <div className="flex flex-wrap gap-2">
+                            {memory.facts.map((fact) => (
+                              <Badge key={fact.id} variant="secondary" className="px-3 py-1 text-xs">
+                                {fact.metadata?.label ? `${fact.metadata.label}: ` : ""}
+                                {fact.metadata?.value || fact.content}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground">No structured facts saved yet.</p>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            ) : null}
+
             <div className="flex-1 space-y-4 overflow-y-auto">
               {selectedThreadId && loadingMessages ? (
                 <p className="text-sm text-muted-foreground">Loading messages...</p>

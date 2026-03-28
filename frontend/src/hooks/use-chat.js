@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { createThread, fetchMessages, fetchThreads, sendMessage } from "@/lib/api";
+import { createThread, fetchMessages, fetchThreadMemory, fetchThreads, sendMessage } from "@/lib/api";
 
 export function useThreads(agentId) {
   const query = useQuery({
@@ -32,6 +32,21 @@ export function useMessages(threadId) {
   };
 }
 
+export function useThreadMemory(threadId) {
+  const query = useQuery({
+    queryKey: ["memory", threadId],
+    queryFn: () => fetchThreadMemory(threadId),
+    select: (payload) => payload.memory ?? { summary: "", facts: [] },
+    enabled: Boolean(threadId),
+  });
+
+  return {
+    memory: query.data ?? { summary: "", facts: [] },
+    isLoading: query.isPending,
+    errorMessage: query.error?.message ?? "",
+  };
+}
+
 export function useCreateThread() {
   const queryClient = useQueryClient();
 
@@ -57,6 +72,7 @@ export function useSendMessage(agentId) {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["messages", variables.threadId] });
       queryClient.invalidateQueries({ queryKey: ["threads", agentId] });
+      queryClient.invalidateQueries({ queryKey: ["memory", variables.threadId] });
     },
   });
 

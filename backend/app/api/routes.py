@@ -12,6 +12,7 @@ from app.auth.dependencies import get_current_user
 from app.db.models import Agent, ChatMessage, User
 from app.db.session import get_db
 from app.repositories.agents import AgentRepository
+from app.repositories.memories import MemoryRepository
 from app.repositories.messages import MessageRepository
 from app.repositories.runs import RunRepository
 from app.repositories.threads import ThreadRepository
@@ -49,6 +50,16 @@ def _serialize_message(message: ChatMessage) -> dict[str, Any]:
         "metadata": message.metadata,
         "created_at": message.created_at.isoformat() if message.created_at else None,
     }
+
+
+def _build_chat_service(db: Session) -> ChatService:
+    return ChatService(
+        db,
+        ThreadRepository(db),
+        MessageRepository(db),
+        MemoryRepository(db),
+        RunService(RunRepository(db)),
+    )
 
 
 @router.get("/health-check")
@@ -103,7 +114,7 @@ def get_threads(
     if profile is None:
         raise HTTPException(status_code=404, detail="Unknown agent.")
 
-    chat_service = ChatService(db, ThreadRepository(db), MessageRepository(db), RunService(RunRepository(db)))
+    chat_service = _build_chat_service(db)
     threads = chat_service.list_threads(user_id=user.id, agent_id=agent_id)
     return {
         "threads": [
@@ -130,7 +141,7 @@ def post_thread(
         raise HTTPException(status_code=404, detail="Unknown agent.")
 
     title = (payload.title or "New chat").strip() or "New chat"
-    chat_service = ChatService(db, ThreadRepository(db), MessageRepository(db), RunService(RunRepository(db)))
+    chat_service = _build_chat_service(db)
     thread = chat_service.create_thread(user_id=user.id, agent_id=payload.agent_id, title=title)
     return {
         "thread": {
@@ -149,7 +160,7 @@ def get_thread_messages(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict[str, list[dict[str, Any]]]:
-    chat_service = ChatService(db, ThreadRepository(db), MessageRepository(db), RunService(RunRepository(db)))
+    chat_service = _build_chat_service(db)
     thread = chat_service.get_thread(thread_id=thread_id, user_id=user.id)
     if thread is None:
         raise HTTPException(status_code=404, detail="Thread not found.")
@@ -165,7 +176,7 @@ def post_thread_message(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
-    chat_service = ChatService(db, ThreadRepository(db), MessageRepository(db), RunService(RunRepository(db)))
+    chat_service = _build_chat_service(db)
     thread = chat_service.get_thread(thread_id=thread_id, user_id=user.id)
     if thread is None:
         raise HTTPException(status_code=404, detail="Thread not found.")
@@ -201,3 +212,17 @@ def post_thread_message(
             "assistant": _serialize_message(assistant_message),
         },
     }
+
+
+@router.get("/threads/{thread_id}/memory")
+def get_thread_memory(
+    thread_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    chat_service = _build_chat_service(db)
+    thread = chat_service.get_thread(thread_id=thread_id, user_id=user.id)
+    if thread is None:
+        raise HTTPException(status_code=404, detail="Thread not found.")
+
+    return {"memory": chat_service.get_memory_payload(thread_id=thread_id, user_id=user.id)}
